@@ -139,6 +139,18 @@ export const ListPage: React.FC = () => {
           <Input
             value={indexValue !== undefined ? String(indexValue) : ""}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
+              if (Number(e.target.value) > listArray.length - 1) {
+                if (listArray.length === 0) {
+                  setIndexValue(undefined);
+                  return;
+                }
+                setIndexValue(listArray.length - 1);
+                return;
+              }
+              if (Number(e.target.value) < 0) {
+                setIndexValue(0);
+                return;
+              }
               setIndexValue(Number(e.target.value));
             }}
             placeholder="Введите индекс"

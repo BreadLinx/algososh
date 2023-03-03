@@ -11,7 +11,7 @@ import { Button } from "../ui/button/button";
 import { Circle } from "../ui/circle/circle";
 import { ElementStates } from "../../types/element-states";
 import styled from "styled-components";
-import { Queue } from "../../constants/queue";
+import { Queue } from "../../data-structures/queue";
 import { StyledFormFlex } from "../ui/styled-ui/styled-form-flex";
 import { StyledContentFlex } from "../ui/styled-ui/styled-content-flex";
 import { IButtonsStates } from "../../types/buttons-states";

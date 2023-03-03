@@ -1,4 +1,10 @@
-import React, { ChangeEvent, useState, FormEvent, MouseEvent } from "react";
+import React, {
+  ChangeEvent,
+  useState,
+  FormEvent,
+  MouseEvent,
+  useEffect,
+} from "react";
 import { SolutionLayout } from "../ui/solution-layout/solution-layout";
 import { Input } from "../ui/input/input";
 import { Button } from "../ui/button/button";
@@ -7,6 +13,9 @@ import { ElementStates } from "../../types/element-states";
 import { StyledContentFlex } from "../ui/styled-ui/styled-content-flex";
 import { StyledFormFlex } from "../ui/styled-ui/styled-form-flex";
 import { IButtonsStates } from "../../types/buttons-states";
+import { Stack } from "../../data-structures/Stack";
+
+const stackInstence = new Stack<string>();
 
 export const StackPage: React.FC = () => {
   const [stringValue, setStringValue] = useState<string>("");
@@ -23,6 +32,23 @@ export const StackPage: React.FC = () => {
     }[]
   >([]);
 
+  useEffect(() => {
+    const tempArray: { text: string; status: ElementStates }[] = [];
+
+    for (let i = 0; i < stackInstence.container.length; i++) {
+      tempArray.push({
+        text: stackInstence.container[i] || "",
+        status: ElementStates.Default,
+      });
+    }
+
+    setStack([...tempArray]);
+  }, [stackInstence.container.length]);
+
+  useEffect(() => {
+    return () => stackInstence.resetStack();
+  }, []);
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setButtonLoading({
@@ -32,7 +58,6 @@ export const StackPage: React.FC = () => {
       mainInput: IButtonsStates.Disabled,
     });
 
-    setStringValue("");
     const intermediateArray = [...stack];
     intermediateArray.push({
       text: stringValue,
@@ -40,17 +65,14 @@ export const StackPage: React.FC = () => {
     });
     setStack([...intermediateArray]);
     await new Promise(resolve => setTimeout(resolve, 500));
-    intermediateArray[intermediateArray.length - 1] = {
-      ...intermediateArray[intermediateArray.length - 1],
-      status: ElementStates.Default,
-    };
-    setStack([...intermediateArray]);
+    stackInstence.push(stringValue);
     setButtonLoading({
       addButton: IButtonsStates.Default,
       deleteButton: IButtonsStates.Default,
       resetButton: IButtonsStates.Default,
       mainInput: IButtonsStates.Default,
     });
+    setStringValue("");
   };
 
   const handleDelete = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -63,17 +85,15 @@ export const StackPage: React.FC = () => {
     });
 
     const intermediateArray = [...stack];
-
     intermediateArray[intermediateArray.length - 1] = {
       ...intermediateArray[intermediateArray.length - 1],
       status: ElementStates.Changing,
     };
     setStack([...intermediateArray]);
     await new Promise(resolve => setTimeout(resolve, 500));
-    intermediateArray.pop();
-    setStack([...intermediateArray]);
+    stackInstence.pop();
 
-    if (intermediateArray.length === 0) {
+    if (stackInstence.container.length === 0) {
       setButtonLoading({
         addButton: IButtonsStates.Default,
         deleteButton: IButtonsStates.Disabled,
@@ -92,7 +112,7 @@ export const StackPage: React.FC = () => {
 
   const handleReset = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    setStack([]);
+    stackInstence.resetStack();
     setButtonLoading({
       addButton: IButtonsStates.Default,
       deleteButton: IButtonsStates.Disabled,

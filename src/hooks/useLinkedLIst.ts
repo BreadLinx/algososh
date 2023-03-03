@@ -1,24 +1,14 @@
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect } from "react";
 import { ElementStates } from "../types/element-states";
 import { IButtonsStates } from "../types/buttons-states";
-
-interface INode<T> {
-  value: T;
-  next: INode<T> | null;
-}
-
-class Node<T> implements INode<T> {
-  value: T;
-  next: Node<T> | null;
-  constructor(value: T, next?: Node<T> | null) {
-    this.value = value;
-    this.next = next === undefined ? null : next;
-  }
-}
+import { Node } from "../data-structures/linked-list";
+import { LinkedList } from "../data-structures/linked-list";
 
 const getRandomInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
+
+const linkedList = new LinkedList<string>();
 
 export const useLinkedList = (
   size: number,
@@ -47,7 +37,7 @@ export const useLinkedList = (
     indexInput: IButtonsStates;
   };
 } => {
-  const [head, setHead] = useState<Node<string> | null>(null);
+  const [head, setHead] = useState<Node<string> | null>(linkedList.head);
   const [listArray, setListArray] = useState<
     {
       above: { value: string; status: ElementStates };
@@ -78,20 +68,43 @@ export const useLinkedList = (
   });
 
   useEffect(() => {
-    let tempHead: Node<string> | null = null;
-
     for (let i = 1; i <= size; i++) {
-      const tempNode: Node<string> = new Node<string>(
-        String(getRandomInt(1, 100)),
-        tempHead,
-      );
-
-      tempHead = tempNode;
+      linkedList.prepend(String(getRandomInt(1, 100)));
     }
 
-    setHead(tempHead);
-    createVisibleArray(tempHead);
+    setHead(linkedList.head);
+    createVisibleArray(linkedList.head);
   }, []);
+
+  useEffect(() => {
+    setTimeout(() => {
+      createVisibleArray(linkedList.head);
+
+      if (linkedList.size === 0) {
+        setButtonsStates({
+          addInHead: IButtonsStates.Default,
+          addInTail: IButtonsStates.Default,
+          deleteFromHead: IButtonsStates.Disabled,
+          deleteFromTail: IButtonsStates.Disabled,
+          addByIndex: IButtonsStates.Default,
+          deleteByIndex: IButtonsStates.Disabled,
+          valueInput: IButtonsStates.Default,
+          indexInput: IButtonsStates.Default,
+        });
+      } else {
+        setButtonsStates({
+          addInHead: IButtonsStates.Default,
+          addInTail: IButtonsStates.Default,
+          deleteFromHead: IButtonsStates.Default,
+          deleteFromTail: IButtonsStates.Default,
+          addByIndex: IButtonsStates.Default,
+          deleteByIndex: IButtonsStates.Default,
+          valueInput: IButtonsStates.Default,
+          indexInput: IButtonsStates.Default,
+        });
+      }
+    }, 500);
+  }, [linkedList.size]);
 
   const addElementInHead = async (value: string) => {
     setButtonsStates({
@@ -115,19 +128,11 @@ export const useLinkedList = (
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    const tempNode = new Node<string>(value, head);
-    setHead(tempNode);
-    createVisibleArray(tempNode, { index: 0, status: ElementStates.Modified });
-
-    setButtonsStates({
-      addInHead: IButtonsStates.Default,
-      addInTail: IButtonsStates.Default,
-      deleteFromHead: IButtonsStates.Default,
-      deleteFromTail: IButtonsStates.Default,
-      addByIndex: IButtonsStates.Default,
-      deleteByIndex: IButtonsStates.Default,
-      valueInput: IButtonsStates.Default,
-      indexInput: IButtonsStates.Default,
+    linkedList.prepend(value);
+    setHead(linkedList.head);
+    createVisibleArray(linkedList.head, {
+      index: 0,
+      status: ElementStates.Modified,
     });
   };
   const deleteElementFromHead = async (states: boolean = true) => {
@@ -157,39 +162,9 @@ export const useLinkedList = (
       under: { value, status: ElementStates.Changing },
     };
     setListArray([...tempArray]);
-    await new Promise(resolve => setTimeout(resolve, 500));
 
-    if (!head.next) {
-      createVisibleArray(null);
-      setHead(null);
-
-      setButtonsStates({
-        addInHead: IButtonsStates.Default,
-        addInTail: IButtonsStates.Default,
-        deleteFromHead: IButtonsStates.Disabled,
-        deleteFromTail: IButtonsStates.Disabled,
-        addByIndex: IButtonsStates.Default,
-        deleteByIndex: IButtonsStates.Disabled,
-        valueInput: IButtonsStates.Default,
-        indexInput: IButtonsStates.Default,
-      });
-
-      return;
-    }
-
-    createVisibleArray(head.next);
-    setHead(head.next);
-
-    setButtonsStates({
-      addInHead: IButtonsStates.Default,
-      addInTail: IButtonsStates.Default,
-      deleteFromHead: IButtonsStates.Default,
-      deleteFromTail: IButtonsStates.Default,
-      addByIndex: IButtonsStates.Default,
-      deleteByIndex: IButtonsStates.Default,
-      valueInput: IButtonsStates.Default,
-      indexInput: IButtonsStates.Default,
-    });
+    linkedList.removeFromHead();
+    setHead(linkedList.head);
   };
 
   const addElementInTail = async (value: string) => {
@@ -205,8 +180,6 @@ export const useLinkedList = (
     });
 
     const tempArray = [...listArray];
-    const tail = getTail();
-    const tempNode = new Node<string>(value);
 
     if (tempArray[tempArray.length - 1]) {
       tempArray[tempArray.length - 1] = {
@@ -217,26 +190,11 @@ export const useLinkedList = (
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    if (tail.node) {
-      tail.node.next = tempNode;
-      createVisibleArray(head, {
-        index: getTail().index,
-        status: ElementStates.Modified,
-      });
-    } else {
-      setHead(tempNode);
-      createVisibleArray(tempNode);
-    }
+    linkedList.append(value);
 
-    setButtonsStates({
-      addInHead: IButtonsStates.Default,
-      addInTail: IButtonsStates.Default,
-      deleteFromHead: IButtonsStates.Default,
-      deleteFromTail: IButtonsStates.Default,
-      addByIndex: IButtonsStates.Default,
-      deleteByIndex: IButtonsStates.Default,
-      valueInput: IButtonsStates.Default,
-      indexInput: IButtonsStates.Default,
+    createVisibleArray(linkedList.head, {
+      index: linkedList.size - 1,
+      status: ElementStates.Modified,
     });
   };
   const deleteElementFromTail = async () => {
@@ -256,56 +214,22 @@ export const useLinkedList = (
     if (!head) {
       return;
     }
-    const tail = getTail().node;
-    const { value } = tail as Node<string>;
 
     tempArray[tempArray.length - 1] = {
       ...tempArray[tempArray.length - 1],
       node: { ...tempArray[tempArray.length - 1].node, value: "" },
-      under: { value, status: ElementStates.Changing },
+      under: {
+        value: tempArray[tempArray.length - 1].node.value,
+        status: ElementStates.Changing,
+      },
     };
     setListArray([...tempArray]);
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    if (!head.next) {
-      createVisibleArray(null);
-      setHead(null);
+    linkedList.removeFromTail();
 
-      setButtonsStates({
-        addInHead: IButtonsStates.Default,
-        addInTail: IButtonsStates.Default,
-        deleteFromHead: IButtonsStates.Disabled,
-        deleteFromTail: IButtonsStates.Disabled,
-        addByIndex: IButtonsStates.Default,
-        deleteByIndex: IButtonsStates.Disabled,
-        valueInput: IButtonsStates.Default,
-        indexInput: IButtonsStates.Default,
-      });
-
-      return;
-    }
-
-    let tempNode: Node<string> = head;
-    let beforeTail: Node<string> | null = null;
-
-    while (tempNode.next) {
-      beforeTail = tempNode;
-      tempNode = tempNode.next;
-    }
-
-    (beforeTail as Node<string>).next = null;
-    createVisibleArray();
-
-    setButtonsStates({
-      addInHead: IButtonsStates.Default,
-      addInTail: IButtonsStates.Default,
-      deleteFromHead: IButtonsStates.Default,
-      deleteFromTail: IButtonsStates.Default,
-      addByIndex: IButtonsStates.Default,
-      deleteByIndex: IButtonsStates.Default,
-      valueInput: IButtonsStates.Default,
-      indexInput: IButtonsStates.Default,
-    });
+    createVisibleArray(linkedList.head);
+    setHead(linkedList.head);
   };
 
   const addElementByIndex = async (index: number, value: string) => {
@@ -321,29 +245,13 @@ export const useLinkedList = (
     });
 
     const tempArray = [...listArray];
-    const insertiveNode = new Node<string>(value);
-    let tempNode = head;
+    let tempNode = linkedList.head;
     let currentIndex = 0;
-    if (currentIndex === index) {
-      addElementInHead(value);
-      return;
-    }
 
-    if (!tempNode) {
-      setButtonsStates({
-        addInHead: IButtonsStates.Default,
-        addInTail: IButtonsStates.Default,
-        deleteFromHead: IButtonsStates.Disabled,
-        deleteFromTail: IButtonsStates.Disabled,
-        addByIndex: IButtonsStates.Default,
-        deleteByIndex: IButtonsStates.Disabled,
-        valueInput: IButtonsStates.Default,
-        indexInput: IButtonsStates.Default,
-      });
-      return;
-    }
-
-    while (tempNode.next) {
+    while (tempNode!.next) {
+      if (index === 0) {
+        break;
+      }
       tempArray[currentIndex - 1] = {
         ...tempArray[currentIndex - 1],
         above: { value: "", status: ElementStates.Default },
@@ -359,12 +267,9 @@ export const useLinkedList = (
       currentIndex++;
 
       if (currentIndex === index) {
-        const tempInsertionNode = tempNode.next;
-        tempNode.next = insertiveNode;
-        insertiveNode.next = tempInsertionNode;
         break;
       } else {
-        tempNode = tempNode.next;
+        tempNode = tempNode!.next;
       }
     }
     tempArray[currentIndex - 1] = {
@@ -378,22 +283,26 @@ export const useLinkedList = (
     };
     setListArray([...tempArray]);
     await new Promise(resolve => setTimeout(resolve, 500));
+    linkedList.insertAt(value, index);
 
-    createVisibleArray(head, {
-      index: currentIndex,
+    tempArray.splice(currentIndex, 0, {
+      above: { value: "", status: ElementStates.Default },
+      under: { value: "", status: ElementStates.Default },
+      status: ElementStates.Default,
+      node: { value, next: null },
+    });
+
+    tempArray[currentIndex] = {
+      ...tempArray[currentIndex],
       status: ElementStates.Modified,
-    });
-
-    setButtonsStates({
-      addInHead: IButtonsStates.Default,
-      addInTail: IButtonsStates.Default,
-      deleteFromHead: IButtonsStates.Default,
-      deleteFromTail: IButtonsStates.Default,
-      addByIndex: IButtonsStates.Default,
-      deleteByIndex: IButtonsStates.Default,
-      valueInput: IButtonsStates.Default,
-      indexInput: IButtonsStates.Default,
-    });
+      above: { value: "", status: ElementStates.Default },
+    };
+    tempArray[currentIndex + 1] = {
+      ...tempArray[currentIndex + 1],
+      status: ElementStates.Default,
+      above: { value: "", status: ElementStates.Default },
+    };
+    setListArray([...tempArray]);
   };
   const deleteElementByIndex = async (index: number) => {
     setButtonsStates({
@@ -409,18 +318,16 @@ export const useLinkedList = (
 
     const tempArray = [...listArray];
     let currentIndex = 0;
-    let tempNode = head;
-
-    if (index === currentIndex) {
-      deleteElementFromHead(false);
-      return;
-    }
+    let tempNode = linkedList.head;
 
     if (!tempNode) {
       return;
     }
 
     while (tempNode.next) {
+      if (index === 0) {
+        break;
+      }
       tempArray[currentIndex] = {
         ...tempArray[currentIndex],
         status: ElementStates.Changing,
@@ -429,9 +336,8 @@ export const useLinkedList = (
       await new Promise(resolve => setTimeout(resolve, 500));
 
       currentIndex++;
+
       if (index === currentIndex) {
-        const nextChainNode = tempNode.next.next;
-        tempNode.next = nextChainNode;
         break;
       } else {
         tempNode = tempNode.next;
@@ -450,34 +356,8 @@ export const useLinkedList = (
     };
     setListArray([...tempArray]);
     await new Promise(resolve => setTimeout(resolve, 500));
-    createVisibleArray();
-
-    setButtonsStates({
-      addInHead: IButtonsStates.Default,
-      addInTail: IButtonsStates.Default,
-      deleteFromHead: IButtonsStates.Default,
-      deleteFromTail: IButtonsStates.Default,
-      addByIndex: IButtonsStates.Default,
-      deleteByIndex: IButtonsStates.Default,
-      valueInput: IButtonsStates.Default,
-      indexInput: IButtonsStates.Default,
-    });
-  };
-
-  const getTail = () => {
-    let tempNode = head;
-    let currentIndex = 0;
-
-    while (tempNode) {
-      if (tempNode.next) {
-        tempNode = tempNode.next;
-        currentIndex++;
-      } else {
-        break;
-      }
-    }
-
-    return { index: currentIndex, node: tempNode };
+    linkedList.removeAt(currentIndex);
+    createVisibleArray(linkedList.head);
   };
 
   const createVisibleArray = async (
@@ -485,6 +365,10 @@ export const useLinkedList = (
     options?: { index: number; status: ElementStates },
   ) => {
     let currentIndex = 0;
+    if (headNode === null) {
+      setListArray([]);
+      return;
+    }
     let tempHead = headNode ? headNode : head;
     let tempNodesArray: {
       above: { value: string; status: ElementStates };
@@ -492,11 +376,6 @@ export const useLinkedList = (
       status: ElementStates;
       node: Node<string>;
     }[] = [];
-
-    if (headNode === null) {
-      setListArray([]);
-      return;
-    }
 
     if (options) {
       while (tempHead) {

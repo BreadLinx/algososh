@@ -49,6 +49,16 @@ export const FibonacciPage: React.FC = () => {
         <Input
           value={String(stringValue)}
           onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            if (Number(e.target.value) > 19) {
+              setStringValue(19);
+              return;
+            }
+
+            if (Number(e.target.value) < 0) {
+              setStringValue(0);
+              return;
+            }
+
             setStringValue(Number(e.target.value));
           }}
           max={19}
@@ -57,7 +67,7 @@ export const FibonacciPage: React.FC = () => {
           disabled={buttonLoading}
         />
         <Button
-          text="Развернуть"
+          text="Рассчитать"
           isLoader={buttonLoading}
           type="submit"
           disabled={stringValue === undefined}
